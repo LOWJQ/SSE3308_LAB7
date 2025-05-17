@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Library Books</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="fw-bold text-primary">Library Books</h1>
+      <a href="add.html" class="btn btn-success px-4">+ Add Book</a>
+    </div>
+
+    <div class="card shadow">
+      <div class="card-header">
+        <h2 class="h4">Book List</h2>
+      </div>
+      <div class="table-wrapper">
+        <table class="table mb-0 table-hover align-middle text-center">
+          <thead>
+            <tr>
+              <th>Cover</th>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Genre</th>
+              <th>Published</th>
+              <th>Qty</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="bookTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function formatMonthYear(str) {
+      const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const m = str.match(/^(\d{4})-(\d{2})$/);
+      if (m) {
+        const idx = parseInt(m[2], 10) - 1;
+        return mNames[idx] ? `${mNames[idx]} ${m[1]}` : str;
+      }
+      return str;
+    }
+
+    async function loadBooks() {
+      const res = await fetch('http://localhost:8000/library.php');
+      const data = await res.json();
+
+      const tbody = document.getElementById('bookTableBody');
+      tbody.innerHTML = data.map(b => `
+        <tr>
+          <td>${b.book_cover 
+            ? `<img src="data:image/jpeg;base64,${b.book_cover}" alt="cover">`
+            : '<span class="text-muted">No Image</span>'}</td>
+          <td>${b.book_title}</td>
+          <td>${b.author_name}</td>
+          <td>${b.genre}</td>
+          <td>${formatMonthYear(b.publication_year)}</td>
+          <td>${b.quantity}</td>
+          <td>
+            <a href="view.html?id=${b.id}" class="btn btn-info btn-sm me-1">View</a>
+            <a href="edit.html?id=${b.id}" class="btn btn-warning btn-sm me-1">Edit</a>
+            <button class="btn btn-danger btn-sm delete" data-id="${b.id}">Delete</button>
+          </td>
+        </tr>`).join('');
+
+      document.querySelectorAll('.delete').forEach(btn => {
+        btn.onclick = async () => {
+          if (confirm('Delete this book?')) {
+            const id = btn.dataset.id;
+            await fetch(`http://localhost:8000/library.php?id=${id}`, { method: 'DELETE' });
+            loadBooks();
+          }
+        };
+      });
+    }
+
+    loadBooks();
+  </script>
+</body>
+</html>
